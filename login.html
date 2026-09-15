@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratory Asset Management - Login</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-header">
+            <h2>Laboratory Asset Login</h2>
+            <p>Role-Based Asset Transaction & Approval System</p>
+        </div>
+
+        <div id="authAlert" class="alert alert-info hidden"></div>
+
+        <div class="form-group">
+            <label for="fullname">Full Name (For Registration)</label>
+            <input type="text" id="fullname" placeholder="Full Name">
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="Email Address">
+        </div>
+
+        <div class="form-group">
+            <label for="role">User Role</label>
+            <select id="role">
+                <option value="Administrator">Administrator</option>
+                <option value="Laboratory Staff">Laboratory Staff</option>
+                <option value="Requester" selected>Requester / Viewer</option>
+            </select>
+        </div>
+
+        <div class="auth-buttons">
+            <button type="button" class="btn btn-secondary btn-block" onclick="registerUser()">Register</button>
+            <button type="button" class="btn btn-primary btn-block" onclick="login()">Login</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/login.js"></script>
+
+</body>
+</html>
+

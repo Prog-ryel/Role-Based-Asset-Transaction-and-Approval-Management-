@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratory Asset Management System</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script>
+        const u = JSON.parse(localStorage.getItem("user") || "null");
+        if (!u) {
+            window.location.href = "index.html";
+        } else if (u.role === "Administrator") {
+            window.location.href = "admin.html";
+        } else if (u.role === "Laboratory Staff" || u.role === "Staff") {
+            window.location.href = "staff.html";
+        } else {
+            window.location.href = "requester.html";
+        }
+    </script>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="top-navbar">
+        <div class="nav-brand">
+            <div>
+                <h1>Laboratory Asset System</h1>
+                <div style="font-size: 11px; color: #ddd;">SAD Lab 4 - Transaction & Approval Engine</div>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            <div class="user-info">
+                <div id="welcome" class="user-name">Loading user...</div>
+                <span id="roleBadge" class="user-role-badge role-requester">Requester</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="nav-tabs" id="navTabs">
+
+        <button class="tab-btn active" data-tab="tab-request">Equipment & Request</button>
+        <button class="tab-btn" data-tab="tab-history">My History</button>
+        <button class="tab-btn hidden" id="tabBtnApprovals" data-tab="tab-approvals">Admin Approvals</button>
+        <button class="tab-btn hidden" id="tabBtnOperations" data-tab="tab-operations">Release & Returns</button>
+        <button class="tab-btn hidden" id="tabBtnEquipment" data-tab="tab-equipment">Equipment Manager</button>
+        <button class="tab-btn hidden" id="tabBtnAudit" data-tab="tab-audit">Audit Logs</button>
+        <button class="tab-btn" data-tab="tab-tests">Test Suite (TC-A4)</button>
+    </div>
+
+    <div id="systemAlert" class="alert alert-info hidden"></div>
+
+    <div class="tab-content" id="tab-request">
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Request Equipment Borrowing</h3>
+                </div>
+                <div class="form-group">
+                    <label for="equipmentSelect">Available Equipment (BR-A4-01 / BR-A4-09)</label>
+                    <select id="equipmentSelect">
+                        <option value="">Loading equipment...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="requestNotes">Purpose / Remarks (Optional)</label>
+                    <input type="text" id="requestNotes" placeholder="e.g. Lab project presentation">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="submitRequest()">Submit Borrow Request</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Equipment Inventory Status</h3>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content hidden" id="tab-history">
+        <div class="card">
+            <div class="card-header">
+                <h3>My Borrowing Transactions</h3>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Req ID</th>
+                            <th>Item Code</th>
+                            <th>Equipment Name</th>
+                            <th>Submitted Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content hidden" id="tab-approvals">
+        <div class="card">
+            <div class="card-header">
+                <h3>Admin Approval Workflow (Pending Requests)</h3>
+                <span class="badge badge-pending" id="pendingCountBadge">0 Pending</span>
+            </div>
+            <div class="alert alert-info">
+                <strong>Business Rules Enforced:</strong><br>
+                • <strong>BR-A4-03:</strong> Only Administrator may approve or reject requests.<br>
+                • <strong>BR-A4-02:</strong> Staff/Admin cannot approve their own borrowing requests.
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Requester Email</th>
+                            <th>Item Requested</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminApprovalTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content hidden" id="tab-operations">
+        <div class="card">
+            <div class="card-header">
+                <h3>Release & Return Transaction Processing</h3>
+            </div>
+            <div class="alert alert-info">
+                <strong>Workflow States:</strong> Approved -> Released -> Returned -> Closed<br>
+                • <strong>BR-A4-04:</strong> Only Approved requests may be released.<br>
+                • <strong>BR-A4-05:</strong> Released equipment becomes <code>Borrowed</code>.<br>
+                • <strong>BR-A4-06:</strong> Returned equipment becomes <code>Available</code> unless marked Damaged/Maintenance.<br>
+                • <strong>BR-A4-07:</strong> Rejected requests cannot be released.<br>
+                • <strong>BR-A4-08:</strong> Returned transactions cannot be processed twice.
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Borrower</th>
+                            <th>Equipment</th>
+                            <th>Current Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="operationsTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content hidden" id="tab-equipment">
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Add New Equipment</h3>
+                </div>
+                <div class="form-group">
+                    <label for="newItemCode">Item Code</label>
+                    <input type="text" id="newItemCode" placeholder="Item Code">
+                </div>
+                <div class="form-group">
+                    <label for="newItemName">Item Name</label>
+                    <input type="text" id="newItemName" placeholder="Item Name">
+                </div>
+                <div class="form-group">
+                    <label for="newItemCategory">Category</label>
+                    <input type="text" id="newItemCategory" placeholder="Category">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="addNewEquipment()">Add Equipment</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Maintenance Controls</h3>
+                </div>
+                <div class="form-group">
+                    <label for="maintenanceEqSelect">Select Equipment</label>
+                    <select id="maintenanceEqSelect"></select>
+                </div>
+                <div class="form-group">
+                    <label for="maintenanceStatusSelect">Set Status</label>
+                    <select id="maintenanceStatusSelect">
+                        <option value="Available">Available</option>
+                        <option value="Maintenance">Maintenance (BR-A4-09)</option>
+                    </select>
+                </div>
+                <button class="btn btn-warning btn-block" onclick="updateEquipmentMaintenance()">Update Equipment Status</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content hidden" id="tab-audit">
+        <div class="card">
+            <div class="card-header">
+                <h3>System Audit Logs (BR-A4-10)</h3>
+                <button class="btn btn-secondary btn-sm" onclick="loadAuditLogs()">Refresh Audit Trail</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Log ID</th>
+                            <th>Timestamp</th>
+                            <th>User Identifier</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Record ID</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditLogsTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content hidden" id="tab-tests">
+        <div class="card">
+            <div class="card-header">
+                <h3>Functional Testing Suite (TC-A4-01 to TC-A4-10)</h3>
+                <button class="btn btn-primary" onclick="runAllFunctionalTests()">Run Full Automated Test Suite</button>
+            </div>
+            <div class="alert alert-info">
+                This verification suite programmatically runs test cases TC-A4-01 through TC-A4-10 against the active role-permission matrix and transaction engine to verify compliance with Laboratory 4 specification.
+            </div>
+
+            <div class="test-suite-box" id="testSuiteBox">
+                <div class="test-item" id="tc-1">
+                    <div><strong>TC-A4-01:</strong> Viewer attempts to open Admin page</div>
+                    <div class="test-status-pending" id="tc-1-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-2">
+                    <div><strong>TC-A4-02:</strong> Staff / Requester submits borrow request</div>
+                    <div class="test-status-pending" id="tc-2-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-3">
+                    <div><strong>TC-A4-03:</strong> Administrator approves request</div>
+                    <div class="test-status-pending" id="tc-3-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-4">
+                    <div><strong>TC-A4-04:</strong> Administrator rejects request</div>
+                    <div class="test-status-pending" id="tc-4-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-5">
+                    <div><strong>TC-A4-05:</strong> Attempt to release rejected request (BR-A4-07)</div>
+                    <div class="test-status-pending" id="tc-5-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-6">
+                    <div><strong>TC-A4-06:</strong> Release approved equipment (BR-A4-05)</div>
+                    <div class="test-status-pending" id="tc-6-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-7">
+                    <div><strong>TC-A4-07:</strong> Return released equipment (BR-A4-06)</div>
+                    <div class="test-status-pending" id="tc-7-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-8">
+                    <div><strong>TC-A4-08:</strong> Check audit log after approval (BR-A4-10)</div>
+                    <div class="test-status-pending" id="tc-8-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-9">
+                    <div><strong>TC-A4-09:</strong> Staff attempts restricted delete operation</div>
+                    <div class="test-status-pending" id="tc-9-status">Pending</div>
+                </div>
+                <div class="test-item" id="tc-10">
+                    <div><strong>TC-A4-10:</strong> Logout and attempt to access protected session</div>
+                    <div class="test-status-pending" id="tc-10-status">Pending</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>

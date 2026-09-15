@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requester Portal - Laboratory Asset System</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="container">
+
+    <div class="top-navbar">
+        <div class="nav-brand">
+            <div>
+                <h1>Requester Portal</h1>
+                <div style="font-size: 11px; color: #ddd;">Available Equipment & Personal Borrowing History</div>
+            </div>
+        </div>
+
+        <div class="user-profile">
+            <div class="user-info">
+                <div id="welcome" class="user-name">Loading user...</div>
+                <span class="user-role-badge role-requester">Requester / Viewer</span>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="nav-tabs" id="navTabs">
+
+        <button class="tab-btn active" data-tab="tab-request">Equipment & Request</button>
+        <button class="tab-btn" data-tab="tab-history">My History</button>
+    </div>
+
+    <div id="systemAlert" class="alert alert-info hidden"></div>
+
+    <div class="tab-content" id="tab-request">
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Request Equipment Borrowing</h3>
+                </div>
+                <div class="form-group">
+                    <label for="equipmentSelect">Available Equipment</label>
+                    <select id="equipmentSelect">
+                        <option value="">Loading equipment...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="requestNotes">Purpose / Remarks (Optional)</label>
+                    <input type="text" id="requestNotes" placeholder="e.g. Lab project presentation">
+                </div>
+                <button class="btn btn-primary btn-block" onclick="submitRequest()">Submit Borrow Request</button>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Equipment Inventory Status</h3>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Item Name</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content hidden" id="tab-history">
+        <div class="card">
+            <div class="card-header">
+                <h3>My Borrowing Transactions</h3>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Req ID</th>
+                            <th>Item Code</th>
+                            <th>Equipment Name</th>
+                            <th>Submitted Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase.js"></script>
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>
